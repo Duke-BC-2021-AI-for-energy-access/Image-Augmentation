@@ -5,7 +5,7 @@ import random
 
 #{src}_{masknum}_{background_fname}
 
-def image_augmenter(cropped_turbines, width_distribution, height_distribution, out_shape, relative, results_dir, out_fname, random_seed):
+def image_augmenter(cropped_turbines, domain, out_shape, relative, results_dir, out_fname, random_seed):
   """[summary]
 
   Args:
@@ -41,7 +41,10 @@ def image_augmenter(cropped_turbines, width_distribution, height_distribution, o
   c = 0
   random.seed(random_seed)
 
-  while imgs < 5 and c < 100:
+  ninetieth_percentile = 3
+  turbines_used = []
+
+  while imgs < ninetieth_percentile and c < 100:
     c+=1
 
     #for j in range(len(location)):
@@ -63,47 +66,58 @@ def image_augmenter(cropped_turbines, width_distribution, height_distribution, o
     loc_x = random.randint(offset_ctr, out_shape[0]-offset_ctr)
     loc_y = random.randint(offset_ctr, out_shape[1]-offset_ctr)
 
-    rand_width_index = random.randint(0, len(width_distribution)-1)
-    size_x = width_distribution[rand_width_index]
+    #rand_width_index = random.randint(0, len(width_distribution)-1)
+    #size_x = width_distribution[rand_width_index]
 
-    rand_height_index = random.randint(0, len(height_distribution)-1)
-    size_y = height_distribution[rand_height_index]
+    #rand_height_index = random.randint(0, len(height_distribution)-1)
+    #size_y = height_distribution[rand_height_index]
 
     curr_rotation = random.randint(0,3)*90
 
-    imwidth, imheight = windmill.size
+    #imwidth, imheight = windmill.size
 
     #avg_ratio = ((size_x/imwidth) + (size_y /imheight)) / 2
-    avg_ratio = ((size_x/(rel_width*imwidth)) + (size_y /(rel_height * imheight))) / 2
-    new_size = (int(imwidth * avg_ratio), int(imheight*avg_ratio))
+    #avg_ratio = ((size_x/(rel_width*imwidth)) + (size_y /(rel_height * imheight))) / 2
+    #new_size = (int(imwidth * avg_ratio), int(imheight*avg_ratio))
+
+    new_size = windmill.size
     size_x_add = new_size[0]/2
     size_y_add = new_size[1]/2
 
-    my_corners = [int(loc_x-size_x_add)+5, int(loc_x+size_x_add)-5, int(loc_y-size_y_add)+5, int(loc_y+size_y_add)-5]
-    my_pixel_vals = masked_pixels[int(loc_y-size_y_add)+5:int(loc_y+size_y_add)-5,int(loc_x-size_x_add)+5:int(loc_x+size_x_add)-5]
+    #my_corners = [int(loc_x-size_x_add)+5, int(loc_x+size_x_add)-5, int(loc_y-size_y_add)+5, int(loc_y+size_y_add)-5]
+    my_corners = [int(loc_x-size_x_add), int(loc_x+size_x_add), int(loc_y-size_y_add), int(loc_y+size_y_add)]
+
+    #my_pixel_vals = masked_pixels[int(loc_y-size_y_add)+5:int(loc_y+size_y_add)-5,int(loc_x-size_x_add)+5:int(loc_x+size_x_add)-5]
+    my_pixel_vals = masked_pixels[int(loc_y-size_y_add)-10:int(loc_y+size_y_add)+10,int(loc_x-size_x_add)-10:int(loc_x+size_x_add)+10]
     
     if curr_rotation == 90 or curr_rotation == 270:
-      my_corners = [int(loc_x-size_y_add)+5, int(loc_x+size_y_add)-5, int(loc_y-size_x_add)+5, int(loc_y+size_x_add)-5]
-      my_pixel_vals = masked_pixels[int(loc_y-size_x_add)+5:int(loc_y+size_x_add)-5,int(loc_x-size_y_add)+5:int(loc_x+size_y_add)-5]
+      #my_corners = [int(loc_x-size_y_add)+5, int(loc_x+size_y_add)-5, int(loc_y-size_x_add)+5, int(loc_y+size_x_add)-5]
+      my_corners = [int(loc_x-size_y_add), int(loc_x+size_y_add), int(loc_y-size_x_add), int(loc_y+size_x_add)]
+      
+      #my_pixel_vals = masked_pixels[int(loc_y-size_x_add)+5:int(loc_y+size_x_add)-5,int(loc_x-size_y_add)+5:int(loc_x+size_y_add)-5]
+      my_pixel_vals = masked_pixels[int(loc_y-size_x_add)-10:int(loc_y+size_x_add)+10,int(loc_x-size_y_add)-10:int(loc_x+size_y_add)+10]
+
 
     if not all((i <= 608 and i >= 0) for i in my_corners) or any(my_pixel_vals.flatten()):
       #Try different rotation
-      if curr_rotation % 180 == 0:
-        my_corners = [int(loc_x-size_y_add)+5, int(loc_x+size_y_add)-5, int(loc_y-size_x_add)+5, int(loc_y+size_x_add)-5]
-        my_pixel_vals = masked_pixels[int(loc_y-size_x_add)+5:int(loc_y+size_x_add)-5,int(loc_x-size_y_add)+5:int(loc_x+size_y_add)-5]
-      else:
-        my_corners = [int(loc_x-size_x_add)+5, int(loc_x+size_x_add)-5, int(loc_y-size_y_add)+5, int(loc_y+size_y_add)-5]
-        my_pixel_vals = masked_pixels[int(loc_y-size_y_add)+5:int(loc_y+size_y_add)-5,int(loc_x-size_x_add)+5:int(loc_x+size_x_add)-5]
-      curr_rotation += 90
-      if not all((i <= 608 and i >= 0) for i in my_corners) or any(my_pixel_vals.flatten()):
-        print("OVERLAP")
-        continue
+      #if curr_rotation % 180 == 0:
+      #  my_corners = [int(loc_x-size_y_add)+5, int(loc_x+size_y_add)-5, int(loc_y-size_x_add)+5, int(loc_y+size_x_add)-5]
+      #  my_pixel_vals = masked_pixels[int(loc_y-size_x_add)+5:int(loc_y+size_x_add)-5,int(loc_x-size_y_add)+5:int(loc_x+size_y_add)-5]
+      #else:
+      #  my_corners = [int(loc_x-size_x_add)+5, int(loc_x+size_x_add)-5, int(loc_y-size_y_add)+5, int(loc_y+size_y_add)-5]
+      #  my_pixel_vals = masked_pixels[int(loc_y-size_y_add)+5:int(loc_y+size_y_add)-5,int(loc_x-size_x_add)+5:int(loc_x+size_x_add)-5]
+      #curr_rotation += 90
+      #if not all((i <= 608 and i >= 0) for i in my_corners) or any(my_pixel_vals.flatten()):
+      print("OVERLAP")
+      continue
 
     if curr_rotation == 360:
       curr_rotation = 0
     
+    turbines_used.append(cropped_turbines[rand_turbine_index])
+    
     new_windmill = windmill.copy()
-    new_windmill = new_windmill.resize(new_size)
+    #new_windmill = new_windmill.resize(new_size)
     new_windmill = new_windmill.rotate(curr_rotation,expand=True,fillcolor=(255,255,255))
 
     new_location = (int(loc_x - size_x_add), int(loc_y - size_y_add))
@@ -157,4 +171,4 @@ def image_augmenter(cropped_turbines, width_distribution, height_distribution, o
   mask_fpath = os.path.join(mask_dir, out_fname + ".png")
   mask.save(mask_fpath)
 
-  return [canvas, mask]
+  return turbines_used

@@ -8,6 +8,7 @@ from shutil import copyfile
 import re
 from get_distribution import return_distribution
 from pathlib import Path
+import json
 
 def multiple_replace(dict, text):
   # Create a regular expression  from the dictionary keys
@@ -31,13 +32,14 @@ replacer = {
   ".jpg":".txt"
 }
 
-cropped = "/scratch/public/cropped_turbines/"
+cropped = "/scratch/public/new_cropped_turbines/"
 domains = ["EM", "NW", "SW"]
 
-augmented_out_folder = "/scratch/public/augmented_images/"
+#augmented_out_folder = "/scratch/public/augmented_images/"
 
 my_out_shape = (608,608)
 
+output_dict = {}
 
 for domain in domains:
 
@@ -48,12 +50,16 @@ for domain in domains:
   #Relative labels
   cropped_labels = [multiple_replace(replacer, src_img) for src_img in cropped_imgs]
 
+
+  #If use for real, would need to only use first 100 from domain file 
   num_imgs, width_turbines, height_turbines = return_distribution(domain)
 
   my_res_folder = f"/scratch/public/augmented_images/{domain}/"
 
+  output_dict[domain] = {}
+
   #Change to src_files
-  for i in range(0,200):
+  for i in range(0,173):
 
     random.seed(42)
 
@@ -64,5 +70,12 @@ for domain in domains:
     print(my_out_fname)
 
     #Can pass in all sources and all relatives
-    image_augmenter(cropped_imgs,width_turbines, height_turbines,my_out_shape,cropped_labels, my_res_folder,my_out_fname, i)
+    turbines = image_augmenter(cropped_imgs, domain, my_out_shape,cropped_labels, my_res_folder,my_out_fname, i)
 
+    output_dict[domain][my_out_fname] = turbines
+
+
+json_file = "/scratch/public/jitter/wt/augment_metadata.json"
+
+with open(json_file, "w") as f:
+  json.dump(output_dict, f)
